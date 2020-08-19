@@ -39,6 +39,11 @@ mod test {
     }
 
     #[service]
+    trait TestService3 {
+        fn rpc_method1(&mut self) -> Output;
+    }
+
+    #[service]
     pub trait TestService2 {
         fn rpc_method1(&mut self, input: Input) -> Output;
         fn rpc_method2(&mut self, input: Input) -> Output;

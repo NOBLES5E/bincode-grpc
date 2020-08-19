@@ -289,9 +289,15 @@ impl RpcMethod {
 
     fn req_type(&self) -> TokenStream2 {
         let args = &self.args;
-        let all_arg_types = args.iter().map(|x| &x.ty);
-        quote::quote! {
-            (#( #all_arg_types ),*,)
+        let all_arg_types: Vec<_> = args.iter().map(|x| &x.ty).collect();
+        if all_arg_types.len() > 0 {
+            quote::quote! {
+                (#( #all_arg_types ),*,)
+            }
+        } else {
+            quote::quote! {
+                ()
+            }
         }
     }
 
@@ -453,12 +459,18 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
 
             let req_type = {
                 let args = &m.sig.inputs;
-                let all_arg_types = args.iter().filter_map(|x| match x {
+                let all_arg_types: Vec<_> = args.iter().filter_map(|x| match x {
                     FnArg::Receiver(_) => None,
                     FnArg::Typed(x) => Some(x.ty.clone()),
-                });
-                quote::quote! {
-                    (#( #all_arg_types ),*,)
+                }).collect();
+                if all_arg_types.len() > 0 {
+                    quote::quote! {
+                        (#( #all_arg_types ),*,)
+                    }
+                } else {
+                    quote::quote! {
+                        ()
+                    }
                 }
             };
 
