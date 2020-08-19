@@ -502,7 +502,7 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
                      let mut resp = self.#method_ident(#( #req_args2 )*,);
                      let f = sink
                          .success(resp)
-                         .map_err(move |e| ::tracing::error!("failed to reply {:?}", e))
+                         .map_err(move |e| ::bincode_grpc::tracing::error!("failed to reply {:?}", e))
                          .map(|_| ());
                      ctx.spawn(f)
                 }

@@ -1,1 +1,1 @@
-workspace = { members = ["bincode-grpc", "bincode-grpc-macro"], exclude = [] }
+workspace = { members = ["bincode-grpc", "bincode-grpc-macro", "example-service"], exclude = [] }

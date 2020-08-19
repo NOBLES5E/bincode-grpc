@@ -21,7 +21,7 @@ dependencies = [
 
 [[package]]
 name = "bincode-grpc"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "bincode",
  "bincode-grpc-macro",
@@ -34,7 +34,7 @@ dependencies = [
 
 [[package]]
 name = "bincode-grpc-macro"
-version = "0.2.0"
+version = "0.3.1"
 dependencies = [
  "heck",
  "proc-macro-crate",
@@ -127,6 +127,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e56268c17a6248366d66d4a47a3381369d068cce8409bb1716ed77ea32163bb"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "example-service"
+version = "0.1.0"
+dependencies = [
+ "bincode-grpc",
+ "futures",
+ "grpcio",
+ "serde",
 ]
 
 [[package]]
@@ -241,6 +251,7 @@ dependencies = [
  "libc",
  "log",
  "parking_lot",
+ "protobuf",
 ]
 
 [[package]]
@@ -432,6 +443,12 @@ checksum = "04f5f085b5d71e2188cb8271e5da0161ad52c3f227a661a3c135fdf28e258b12"
 dependencies = [
  "unicode-xid",
 ]
+
+[[package]]
+name = "protobuf"
+version = "2.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb14183cc7f213ee2410067e1ceeadba2a7478a59432ff0747a335202798b1e2"
 
 [[package]]
 name = "quote"
