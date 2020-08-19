@@ -474,14 +474,14 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
                 }
             };
 
-            let req_args = {
+            let req_args: Vec<_> = {
                 let args = &m.sig.inputs;
                 let all_arg_types = args.iter().filter_map(|x| match x {
                     FnArg::Receiver(_) => None,
                     FnArg::Typed(x) => Some(x.pat.clone()),
                 });
                 all_arg_types
-            };
+            }.collect();
 
             let req_args2 = req_args.clone();
 
@@ -496,15 +496,28 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
                 }
             };
 
-            quote::quote! {
-                #vis fn #grpc_method_ident(&mut self, ctx: ::bincode_grpc::grpcio::RpcContext, req: #req_type, sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>) {
-                     let (#( #req_args )*,) = req;
-                     let mut resp = self.#method_ident(#( #req_args2 )*,);
-                     let f = sink
-                         .success(resp)
-                         .map_err(move |e| ::bincode_grpc::tracing::error!("failed to reply {:?}", e))
-                         .map(|_| ());
-                     ctx.spawn(f)
+            if req_args.len() > 0 {
+                quote::quote! {
+                    #vis fn #grpc_method_ident(&mut self, ctx: ::bincode_grpc::grpcio::RpcContext, req: #req_type, sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>) {
+                         let (#( #req_args )*,) = req;
+                         let mut resp = self.#method_ident(#( #req_args2 )*,);
+                         let f = sink
+                             .success(resp)
+                             .map_err(move |e| ::bincode_grpc::tracing::error!("failed to reply {:?}", e))
+                             .map(|_| ());
+                         ctx.spawn(f)
+                    }
+                }
+            } else {
+                quote::quote! {
+                    #vis fn #grpc_method_ident(&mut self, ctx: ::bincode_grpc::grpcio::RpcContext, _req: #req_type, sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>) {
+                         let mut resp = self.#method_ident();
+                         let f = sink
+                             .success(resp)
+                             .map_err(move |e| ::bincode_grpc::tracing::error!("failed to reply {:?}", e))
+                             .map(|_| ());
+                         ctx.spawn(f)
+                    }
                 }
             }
         })

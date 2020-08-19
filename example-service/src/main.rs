@@ -15,7 +15,7 @@ trait TestService {
 
 #[bincode_grpc::service]
 trait TestService3 {
-    fn rpc_method1(&mut self) -> Output;
+    fn rpc_method4(&mut self) -> Output;
 }
 
 #[bincode_grpc::service]
@@ -25,6 +25,13 @@ pub trait TestService2 {
 }
 
 struct TestServer;
+
+#[bincode_grpc::server]
+impl TestService3 for TestServer {
+    fn rpc_method4(&mut self) -> Output {
+        Output {}
+    }
+}
 
 #[bincode_grpc::server]
 impl TestService for TestServer {
