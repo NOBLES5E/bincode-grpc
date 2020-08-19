@@ -21,7 +21,7 @@ dependencies = [
 
 [[package]]
 name = "bincode-grpc"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bincode",
  "bincode-grpc-macro",

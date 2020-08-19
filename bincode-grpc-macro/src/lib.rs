@@ -28,8 +28,8 @@ use syn::{Attribute, Ident, ReturnType, Visibility};
 ///
 /// // generated create service function (`service_create_fn_ident`)
 /// ```
-/// pub fn create_greeter<S: Greeter + Send + Clone + 'static>(s: S) -> ::grpcio::Service {
-///     let mut builder = ::grpcio::ServiceBuilder::new();
+/// pub fn create_greeter<S: Greeter + Send + Clone + 'static>(s: S) -> ::bincode_grpc::grpcio::Service {
+///     let mut builder = ::bincode_grpc::grpcio::ServiceBuilder::new();
 ///     let mut instance = s;
 ///     builder = builder.add_unary_handler(&METHOD_GREETER_SAY_HELLO, move |ctx, req, resp| {
 ///         instance.say_hello(ctx, req, resp)
@@ -81,7 +81,7 @@ impl Service {
         quote::quote! {
             #[derive(Clone)]
             #vis struct #ident {
-                client: ::grpcio::Client,
+                client: ::bincode_grpc::grpcio::Client,
             }
         }
     }
@@ -105,9 +105,9 @@ impl Service {
         let client_ident = self.client_ident();
         quote::quote! {
             impl #client_ident {
-                #vis fn new(channel: ::grpcio::Channel) -> Self {
+                #vis fn new(channel: ::bincode_grpc::grpcio::Channel) -> Self {
                     Self {
-                        client: ::grpcio::Client::new(channel)
+                        client: ::bincode_grpc::grpcio::Client::new(channel)
                     }
                 }
 
@@ -158,8 +158,8 @@ impl Service {
             }
         });
         quote::quote! {
-            #vis fn #fn_ident<S: #ident + Send + Clone + 'static>(s: S) -> ::grpcio::Service {
-                let mut builder = ::grpcio::ServiceBuilder::new();
+            #vis fn #fn_ident<S: #ident + Send + Clone + 'static>(s: S) -> ::bincode_grpc::grpcio::Service {
+                let mut builder = ::bincode_grpc::grpcio::ServiceBuilder::new();
                 #( #method_registrations )*
                 builder.build()
             }
@@ -208,9 +208,9 @@ impl ToTokens for Service {
 /// ```
 ///     fn say_hello_grpc(
 ///         &mut self,
-///         ctx: ::grpcio::RpcContext,
+///         ctx: ::bincode_grpc::grpcio::RpcContext,
 ///         req: (HelloRequest, ), // the tuple is used for the case where the original trait method has multiple arguments
-///         sink: ::grpcio::UnarySink<HelloReply>,
+///         sink: ::bincode_grpc::grpcio::UnarySink<HelloReply>,
 ///     );
 /// ```
 struct RpcMethod {
@@ -319,8 +319,8 @@ impl RpcMethod {
         let opt_method_ident = quote::format_ident!("{}_opt", ident);
 
         quote::quote! {
-            fn #ident(&self, req: &#req_type) -> ::grpcio::Result<#resp_type> {
-                self.#opt_method_ident(req, ::grpcio::CallOption::default())
+            fn #ident(&self, req: &#req_type) -> ::bincode_grpc::grpcio::Result<#resp_type> {
+                self.#opt_method_ident(req, ::bincode_grpc::grpcio::CallOption::default())
             }
         }
     }
@@ -333,7 +333,7 @@ impl RpcMethod {
         let method_ident = self.method_declaration_ident(&server_name);
 
         quote::quote! {
-            fn #opt_method_ident(&self, req: &#req_type, opt: ::grpcio::CallOption) -> ::grpcio::Result<#resp_type> {
+            fn #opt_method_ident(&self, req: &#req_type, opt: ::bincode_grpc::grpcio::CallOption) -> ::bincode_grpc::grpcio::Result<#resp_type> {
                 self.client.unary_call(&#method_ident, req, opt)
             }
         }
@@ -347,7 +347,7 @@ impl RpcMethod {
         let method_ident = self.method_declaration_ident(&server_name);
 
         quote::quote! {
-            fn #async_opt_method_ident(&self, req: &#req_type, opt: ::grpcio::CallOption) -> ::grpcio::Result<::grpcio::ClientSStreamReceiver<#resp_type>> {
+            fn #async_opt_method_ident(&self, req: &#req_type, opt: ::bincode_grpc::grpcio::CallOption) -> ::bincode_grpc::grpcio::Result<::grpcio::ClientSStreamReceiver<#resp_type>> {
                 self.client.server_streaming(&#method_ident, req, opt)
             }
         }
@@ -360,8 +360,8 @@ impl RpcMethod {
         let async_opt_method_ident = quote::format_ident!("{}_async_opt", ident);
 
         quote::quote! {
-            fn #async_method_ident(&self, req: &#req_type) -> ::grpcio::Result<::grpcio::ClientSStreamReceiver<#resp_type>> {
-                self.#async_opt_method_ident(req, ::grpcio::CallOption::default())
+            fn #async_method_ident(&self, req: &#req_type) -> ::bincode_grpc::grpcio::Result<::grpcio::ClientSStreamReceiver<#resp_type>> {
+                self.#async_opt_method_ident(req, ::bincode_grpc::grpcio::CallOption::default())
             }
         }
     }
@@ -378,9 +378,9 @@ impl RpcMethod {
             #( #attrs )*
             fn #ident(
                 #receiver,
-                ctx: ::grpcio::RpcContext,
+                ctx: ::bincode_grpc::grpcio::RpcContext,
                 req: #req_type,
-                sink: ::grpcio::UnarySink<#resp_type>
+                sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>
               );
         }
     }
@@ -390,14 +390,14 @@ impl RpcMethod {
         let req_type = self.req_type();
         let resp_type = self.resp_type();
         quote::quote! {
-            const #ident: ::grpcio::Method<#req_type, #resp_type> = ::grpcio::Method {
-                ty: ::grpcio::MethodType::Unary,
+            const #ident: ::bincode_grpc::grpcio::Method<#req_type, #resp_type> = ::bincode_grpc::grpcio::Method {
+                ty: ::bincode_grpc::grpcio::MethodType::Unary,
                 name: stringify!(#ident),
-                req_mar: ::grpcio::Marshaller {
+                req_mar: ::bincode_grpc::grpcio::Marshaller {
                     ser: ::bincode_grpc::bi_codec::ser,
                     de: ::bincode_grpc::bi_codec::de,
                 },
-                resp_mar: ::grpcio::Marshaller {
+                resp_mar: ::bincode_grpc::grpcio::Marshaller {
                     ser: ::bincode_grpc::bi_codec::ser,
                     de: ::bincode_grpc::bi_codec::de,
                 },
@@ -497,7 +497,7 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
             };
 
             quote::quote! {
-                #vis fn #grpc_method_ident(&mut self, ctx: ::grpcio::RpcContext, req: #req_type, sink: ::grpcio::UnarySink<#resp_type>) {
+                #vis fn #grpc_method_ident(&mut self, ctx: ::bincode_grpc::grpcio::RpcContext, req: #req_type, sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>) {
                      let (#( #req_args )*,) = req;
                      let mut resp = self.#method_ident(#( #req_args2 )*,);
                      let f = sink
