@@ -347,8 +347,8 @@ impl RpcMethod {
         let method_ident = self.method_declaration_ident(&server_name);
 
         quote::quote! {
-            fn #async_opt_method_ident(&self, req: &#req_type, opt: ::bincode_grpc::grpcio::CallOption) -> ::bincode_grpc::grpcio::Result<::grpcio::ClientSStreamReceiver<#resp_type>> {
-                self.client.server_streaming(&#method_ident, req, opt)
+            fn #async_opt_method_ident(&self, req: &#req_type, opt: ::bincode_grpc::grpcio::CallOption) -> ::bincode_grpc::grpcio::Result<::grpcio::ClientUnaryReceiver<#resp_type>> {
+                self.client.unary_call_async(&#method_ident, req, opt)
             }
         }
     }
@@ -360,7 +360,7 @@ impl RpcMethod {
         let async_opt_method_ident = quote::format_ident!("{}_async_opt", ident);
 
         quote::quote! {
-            fn #async_method_ident(&self, req: &#req_type) -> ::bincode_grpc::grpcio::Result<::grpcio::ClientSStreamReceiver<#resp_type>> {
+            fn #async_method_ident(&self, req: &#req_type) -> ::bincode_grpc::grpcio::Result<::grpcio::ClientUnaryReceiver<#resp_type>> {
                 self.#async_opt_method_ident(req, ::bincode_grpc::grpcio::CallOption::default())
             }
         }
