@@ -2,14 +2,14 @@
 name = "bincode-grpc"
 description = "grpc with bincode codec instead of protobuf"
 license = "AGPL-3.0-or-later"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Xiangru Lian <admin@mail.xrlian.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bincode-grpc-macro = { path = "../bincode-grpc-macro", version = "0.5.1" }
+bincode-grpc-macro = { path = "../bincode-grpc-macro", version = "0.5.2" }
 grpcio = { version = "0.6", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 bincode = "1.3"
