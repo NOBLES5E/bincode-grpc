@@ -86,6 +86,19 @@ impl Service {
         }
     }
 
+    fn client_deref(&self) -> TokenStream2 {
+        let ident = self.client_ident();
+        quote::quote! {
+            impl std::ops::Deref for #ident {
+                type Target = ::bincode_grpc::grpcio::Client;
+
+                fn deref(&self) -> &Self::Target {
+                    &self.client
+                }
+            }
+        }
+    }
+
     fn client_impl(&self) -> TokenStream2 {
         let vis = &self.vis;
         let ident = &self.ident;
@@ -174,6 +187,7 @@ impl ToTokens for Service {
             self.trait_service(),
             self.create_service(),
             self.client_struct(),
+            self.client_deref(),
             self.client_impl(),
         ])
     }
