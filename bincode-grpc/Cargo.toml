@@ -7,8 +7,8 @@ authors = ["Xiangru Lian <admin@mail.xrlian.com>"]
 edition = "2018"
 repository = "https://github.com/L1AN0/bincode-grpc"
 homepage = "https://github.com/L1AN0/bincode-grpc"
-keywords = ["grpc", "protobuf", "rpc", "tls", "http2"]
-categories = ["asynchronous", "network-programming"]
+keywords = ["grpc", "rpc"]
+categories = ["network-programming"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
