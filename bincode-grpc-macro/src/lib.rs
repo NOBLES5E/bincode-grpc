@@ -513,8 +513,8 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
             if req_args.len() > 0 {
                 quote::quote! {
                     #vis fn #grpc_method_ident(&mut self, ctx: ::bincode_grpc::grpcio::RpcContext, req: #req_type, sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>) {
-                         let (#( #req_args )*,) = req;
-                         let mut resp = self.#method_ident(#( #req_args2 )*,);
+                         let (#( #req_args, )*) = req;
+                         let mut resp = self.#method_ident(#( #req_args2, )* );
                          let f = sink
                              .success(resp)
                              .map_err(move |e| ::bincode_grpc::tracing::error!("failed to reply {:?}", e))

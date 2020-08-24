@@ -2,7 +2,7 @@
 name = "bincode-grpc-macro"
 description = "proc macros for the bincode-grpc crate"
 license = "AGPL-3.0-or-later"
-version = "0.5.4"
+version = "0.5.6"
 authors = ["Xiangru Lian <admin@mail.xrlian.com>"]
 edition = "2018"
 repository = "https://github.com/L1AN0/bincode-grpc"
