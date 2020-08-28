@@ -111,6 +111,11 @@ impl Service {
                     x.client_method_opt(&ident),
                     x.client_method_async(),
                     x.client_method_async_opt(&ident),
+
+                    x.client_method_thread_pool(),
+                    x.client_method_thread_pool_opt(&ident),
+                    x.client_method_thread_pool_async(),
+                    x.client_method_thread_pool_async_opt(&ident),
                 ]
             })
             .collect();
@@ -162,11 +167,17 @@ impl Service {
         let fn_ident = self.service_create_fn_ident();
         let method_registrations = self.rpcs.iter().map(|rpc| {
             let declaration_ident = rpc.method_declaration_ident(ident);
+            let thread_pool_declaration_ident = rpc.method_thread_pool_declaration_ident(ident);
             let grpc_ident = rpc.grpc_method_ident();
+            let grpc_thread_pool_ident = rpc.grpc_thread_pool_method_ident();
             quote::quote! {
                 let mut instance = s.clone();
                 builder = builder.add_unary_handler(&#declaration_ident, move |ctx, req, resp| {
                     instance.#grpc_ident(ctx, req, resp)
+                });
+                let mut instance = s.clone();
+                builder = builder.add_unary_handler(&#thread_pool_declaration_ident, move |ctx, req, resp| {
+                    instance.#grpc_thread_pool_ident(ctx, req, resp)
                 });
             }
         });
@@ -283,9 +294,22 @@ impl RpcMethod {
         )
     }
 
+    fn method_thread_pool_declaration_ident(&self, service_name: &Ident) -> Ident {
+        quote::format_ident!(
+            "{}_METHOD_{}_THREAD_POOL",
+            service_name.to_string().as_str().to_shouty_snake_case(),
+            self.ident.to_string().as_str().to_shouty_snake_case()
+        )
+    }
+
     /// `method` to `method_grpc`
     fn grpc_method_ident(&self) -> Ident {
         quote::format_ident!("{}_grpc", self.ident)
+    }
+
+    /// `method` to `method_grpc_thread_pool`
+    fn grpc_thread_pool_method_ident(&self) -> Ident {
+        quote::format_ident!("{}_grpc_thread_pool", self.ident)
     }
 
     /// original user defined methods
@@ -380,10 +404,65 @@ impl RpcMethod {
         }
     }
 
+    fn client_method_thread_pool(&self) -> TokenStream2 {
+        let ident = quote::format_ident!("{}_thread_pool", self.ident);
+        let req_type = self.req_type();
+        let resp_type = self.resp_type();
+        let opt_method_ident = quote::format_ident!("{}_opt", ident);
+
+        quote::quote! {
+            fn #ident(&self, req: &#req_type) -> ::bincode_grpc::grpcio::Result<#resp_type> {
+                self.#opt_method_ident(req, ::bincode_grpc::grpcio::CallOption::default())
+            }
+        }
+    }
+
+    fn client_method_thread_pool_opt(&self, server_name: &Ident) -> TokenStream2 {
+        let ident = quote::format_ident!("{}_thread_pool", self.ident);
+        let req_type = self.req_type();
+        let resp_type = self.resp_type();
+        let opt_method_ident = quote::format_ident!("{}_opt", ident);
+        let method_ident = self.method_thread_pool_declaration_ident(&server_name);
+
+        quote::quote! {
+            fn #opt_method_ident(&self, req: &#req_type, opt: ::bincode_grpc::grpcio::CallOption) -> ::bincode_grpc::grpcio::Result<#resp_type> {
+                self.client.unary_call(&#method_ident, req, opt)
+            }
+        }
+    }
+
+    fn client_method_thread_pool_async_opt(&self, server_name: &Ident) -> TokenStream2 {
+        let ident = quote::format_ident!("{}_thread_pool", self.ident);
+        let req_type = self.req_type();
+        let resp_type = self.resp_type();
+        let async_opt_method_ident = quote::format_ident!("{}_async_opt", ident);
+        let method_ident = self.method_thread_pool_declaration_ident(&server_name);
+
+        quote::quote! {
+            fn #async_opt_method_ident(&self, req: &#req_type, opt: ::bincode_grpc::grpcio::CallOption) -> ::bincode_grpc::grpcio::Result<::grpcio::ClientUnaryReceiver<#resp_type>> {
+                self.client.unary_call_async(&#method_ident, req, opt)
+            }
+        }
+    }
+    fn client_method_thread_pool_async(&self) -> TokenStream2 {
+        let ident = quote::format_ident!("{}_thread_pool", self.ident);
+        let req_type = self.req_type();
+        let resp_type = self.resp_type();
+        let async_method_ident = quote::format_ident!("{}_async", ident);
+        let async_opt_method_ident = quote::format_ident!("{}_async_opt", ident);
+
+        quote::quote! {
+            fn #async_method_ident(&self, req: &#req_type) -> ::bincode_grpc::grpcio::Result<::grpcio::ClientUnaryReceiver<#resp_type>> {
+                self.#async_opt_method_ident(req, ::bincode_grpc::grpcio::CallOption::default())
+            }
+        }
+    }
+
     /// transformed grpc compliant methods
     fn grpc_method(&self) -> TokenStream2 {
         let attrs = &self.attrs;
         let ident = &self.grpc_method_ident();
+        let thread_pool_ident = &self.grpc_thread_pool_method_ident();
         let receiver = &self.receiver;
         let req_type = self.req_type();
         let resp_type = self.resp_type();
@@ -396,17 +475,39 @@ impl RpcMethod {
                 req: #req_type,
                 sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>
               );
+
+            #( #attrs )*
+            fn #thread_pool_ident(
+                #receiver,
+                ctx: ::bincode_grpc::grpcio::RpcContext,
+                req: #req_type,
+                sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>
+              );
         }
     }
 
     fn method_declaration(&self, service_name: &Ident) -> TokenStream2 {
         let ident = self.method_declaration_ident(&service_name);
+        let thread_pool_ident = self.method_thread_pool_declaration_ident(&service_name);
         let req_type = self.req_type();
         let resp_type = self.resp_type();
         quote::quote! {
             const #ident: ::bincode_grpc::grpcio::Method<#req_type, #resp_type> = ::bincode_grpc::grpcio::Method {
                 ty: ::bincode_grpc::grpcio::MethodType::Unary,
                 name: stringify!(#ident),
+                req_mar: ::bincode_grpc::grpcio::Marshaller {
+                    ser: ::bincode_grpc::bi_codec::ser,
+                    de: ::bincode_grpc::bi_codec::de,
+                },
+                resp_mar: ::bincode_grpc::grpcio::Marshaller {
+                    ser: ::bincode_grpc::bi_codec::ser,
+                    de: ::bincode_grpc::bi_codec::de,
+                },
+            };
+
+            const #thread_pool_ident: ::bincode_grpc::grpcio::Method<#req_type, #resp_type> = ::bincode_grpc::grpcio::Method {
+                ty: ::bincode_grpc::grpcio::MethodType::Unary,
+                name: stringify!(#thread_pool_ident),
                 req_mar: ::bincode_grpc::grpcio::Marshaller {
                     ser: ::bincode_grpc::bi_codec::ser,
                     de: ::bincode_grpc::bi_codec::de,
@@ -466,10 +567,11 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
             ImplItem::Method(m) => Some(m),
             _ => None,
         })
-        .map(|m| {
+        .flat_map(|m| {
             let method_ident = &m.sig.ident;
             let vis = &m.vis;
             let grpc_method_ident = quote::format_ident!("{}_grpc", method_ident);
+            let grpc_thread_pool_method_ident = quote::format_ident!("{}_grpc_thread_pool", method_ident);
 
             let req_type = {
                 let args = &m.sig.inputs;
@@ -510,8 +612,9 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
                 }
             };
 
+            let mut methods = Vec::new();
             if req_args.len() > 0 {
-                quote::quote! {
+                let method = quote::quote! {
                     #vis fn #grpc_method_ident(&mut self, ctx: ::bincode_grpc::grpcio::RpcContext, req: #req_type, sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>) {
                          let (#( #req_args, )*) = req;
                          let mut resp = self.#method_ident(#( #req_args2, )* );
@@ -521,9 +624,23 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
                              .map(|_| ());
                          ctx.spawn(f)
                     }
-                }
+                };
+                methods.push(method);
+
+                let method = quote::quote! {
+                    #vis fn #grpc_thread_pool_method_ident(&mut self, ctx: ::bincode_grpc::grpcio::RpcContext, req: #req_type, sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>) {
+                         let (#( #req_args, )*) = req;
+                         let mut server = self.clone();
+                         let f = async move { sink
+                             .success(::smol::unblock(move || { server.#method_ident(#( #req_args2, )* ) }).await)
+                             .map_err(move |e| ::bincode_grpc::tracing::error!("failed to reply {:?}", e))
+                             .map(|_| ()).await };
+                         ctx.spawn(f)
+                    }
+                };
+                methods.push(method);
             } else {
-                quote::quote! {
+                let method = quote::quote! {
                     #vis fn #grpc_method_ident(&mut self, ctx: ::bincode_grpc::grpcio::RpcContext, _req: #req_type, sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>) {
                          let mut resp = self.#method_ident();
                          let f = sink
@@ -532,8 +649,22 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
                              .map(|_| ());
                          ctx.spawn(f)
                     }
-                }
+                };
+                methods.push(method);
+
+                let method = quote::quote! {
+                    #vis fn #grpc_thread_pool_method_ident(&mut self, ctx: ::bincode_grpc::grpcio::RpcContext, _req: #req_type, sink: ::bincode_grpc::grpcio::UnarySink<#resp_type>) {
+                         let mut server = self.clone();
+                         let f = async move { sink
+                             .success(::smol::unblock(move || server.#method_ident()).await)
+                             .map_err(move |e| ::bincode_grpc::tracing::error!("failed to reply {:?}", e))
+                             .map(|_| ()).await };
+                         ctx.spawn(f)
+                    }
+                };
+                methods.push(method);
             }
+            methods
         })
         .collect();
     for method in new_methods {
