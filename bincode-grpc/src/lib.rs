@@ -7,7 +7,7 @@ pub mod bi_codec {
     use grpcio::Result;
     use serde::de::DeserializeOwned;
     use serde::Serialize;
-    use std::io::Read;
+    use std::io::{BufReader, Read};
 
     pub fn ser<M: Serialize>(msg: &M, buf: &mut Vec<u8>) {
         let serialized = bincode::serialize(msg).expect("serialize message failed");

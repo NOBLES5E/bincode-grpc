@@ -2,7 +2,7 @@
 name = "bincode-grpc"
 description = "grpc with bincode codec instead of protobuf"
 license = "AGPL-3.0-or-later"
-version = "0.6.0"
+version = "0.5.6"
 authors = ["Xiangru Lian <admin@mail.xrlian.com>"]
 edition = "2018"
 repository = "https://github.com/L1AN0/bincode-grpc"
@@ -13,11 +13,10 @@ categories = ["network-programming"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bincode-grpc-macro = { path = "../bincode-grpc-macro", version = "0.6.0" }
+bincode-grpc-macro = { path = "../bincode-grpc-macro", version = "0.5.6" }
 grpcio = { version = "0.6", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 bincode = "1.3"
 bytes = "0.5"
 tracing = "0.1"
 futures = "0.3"
-smol = "0.4"
