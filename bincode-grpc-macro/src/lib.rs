@@ -144,13 +144,13 @@ impl Service {
         let vis = &self.vis;
         let ident = &self.ident;
 
-        let original_fns = self.rpcs.iter().map(|rpc| rpc.original_method());
+        // let original_fns = self.rpcs.iter().map(|rpc| rpc.original_method());
         let grpc_fns = self.rpcs.iter().map(|rpc| rpc.grpc_method());
 
         quote::quote! {
             #( #attrs )*
             #vis trait #ident {
-                #( #original_fns )*
+                // #( #original_fns )*
                 #( #grpc_fns )*
             }
         }
@@ -536,10 +536,26 @@ pub fn server(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
             }
         })
         .collect();
+
+    let original_items = std::mem::replace(&mut item.items, vec![]);
+
+    let impl_ident = item.self_ty.clone();
+    let original_impl = quote::quote! {
+        impl #impl_ident {
+            #( #original_items )*
+        }
+    };
+
     for method in new_methods {
         let method: syn::ImplItemMethod =
             syn::parse(method.into_token_stream().into()).expect("cannot parse method");
         item.items.push(syn::ImplItem::Method(method));
     }
-    item.into_token_stream().into()
+
+    let new_item = item.into_token_stream();
+
+    (quote::quote! {
+        #original_impl
+        #new_item
+    }).into()
 }
