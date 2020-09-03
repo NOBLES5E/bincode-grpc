@@ -17,7 +17,7 @@ pub mod bi_codec {
         let start_time = Instant::now();
         let serialized = bincode::serialize(msg).expect("serialize message failed");
         assert_eq!(std::mem::replace(buf, serialized).len(), 0);
-        tracing::debug!("serialize {:?} time cost {:?}", std::any::type_name_of_val(&msg), start_time.elapsed());
+        tracing::debug!("serialize {:?} time cost {:?} on thread {:?}", std::any::type_name_of_val(&msg), start_time.elapsed(), std::thread::current().id());
     }
 
     pub fn de<M: DeserializeOwned>(mut reader: MessageReader) -> Result<M> {
@@ -27,7 +27,7 @@ pub mod bi_codec {
         let mut buf = Vec::with_capacity(reader.len());
         reader.read_to_end(&mut buf).expect("Reading message from buffer failed");
         let result = bincode::deserialize(&mut buf).expect("Deserializing message from buffer failed");
-        tracing::debug!("deserialize {:?} time cost {:?}", std::any::type_name_of_val(&result), start_time.elapsed());
+        tracing::debug!("deserialize {:?} time cost {:?} on thread {:?}", std::any::type_name_of_val(&result), start_time.elapsed(), std::thread::current().id());
         Ok(result)
     }
 }
